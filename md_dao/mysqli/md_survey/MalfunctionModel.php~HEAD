@@ -1,0 +1,126 @@
+<?php
+header("content-type:text/html;charset=utf-8");
+class MalfunctionModel extends DB_Model
+{
+    protected $tables = array(
+//        'site'=>'test_md_lixiang.md_site'
+        'site'=>'md_lixiang.md_site'
+    );
+
+    public function __construct()
+    {
+        parent::__construct('md_survey', 'md_malfunction');
+        $this->log->log_debug('MalfunctionModel  model be initialized');
+    }
+
+
+    public function addMalfunctionData($data)
+    {
+        $data['create_time']=time();
+        $data['create_date']=date('Y-m-d H:i:s',time());
+        return $this->insert($data);
+    }
+
+   
+   //根据id获取单条故障表信息
+   public function getMalfunctionInfo($parames)
+   {
+       $where="";
+       foreach ($parames as $k=>$v){
+           $where.=" AND ".$k." = ".$v;
+       }
+       $sql = " SELECT * FROM ".$this->tablename." WHERE status=0 ".$where;
+       return $this->getCacheRowArray($sql);
+   }
+
+
+    public function getMalfunctionDataCount($limit='',$parames)
+    {
+        $where='';
+        empty($parames['state'])        || $where.=" AND state   =".$parames['state'];
+        empty($parames['faultLevel'])   || $where.=" AND faultLevel   =".$parames['faultLevel'];
+        empty($parames['team_id'])      || $where.=" AND team_id =".$parames['team_id'];
+        if(isset($parames['malfunction_status']) && $parames['malfunction_status']!=''){
+                $where.=" AND malfunction_status in (".$parames['malfunction_status'].")";
+        }
+        if(!empty($parames['malfunction_date'])){
+            $str=preg_split('/\s-\s/',$parames['malfunction_date']);
+            $strTime=strtotime($str[0]);
+            $endTime=strtotime($str[1]);
+            $where.=' AND malfunction_time>='.$strTime.' AND malfunction_time<='.$endTime;
+        }
+        if(!empty($parames['servicing_date'])){
+            $str=preg_split('/\s-\s/',$parames['servicing_date']);
+            $strTime=strtotime($str[0]);
+            $endTime=strtotime($str[1]);
+            $where.=' AND servicing_date>='.$strTime.' AND servicing_date<='.$endTime;
+        }
+
+        if(isset($parames['input_data']) && $parames['input_data']!=''){
+            $data=trim($parames['input_data']);
+            if(preg_match("/^[0-9a-zA-Z]{3,10}$/", $data)){
+                $where.=' AND cabinet_num='."'".$data."'";
+            }else{
+                $where.=" AND  admin_user_name LIKE"."'%". $data ."%'";
+            }
+        }
+
+        $sql=" SELECT COUNT(1) FROM ".$this->tablename." WHERE status=0 ".$where;
+        return $this->getCacheRowArray($sql)['COUNT(1)'];
+    }
+
+   public function getMalfunctionDataAll($limit='',$parames)
+   {
+       $where='';
+       empty($parames['state'])        || $where.=" AND state   =".$parames['state'];
+       empty($parames['faultLevel'])   || $where.=" AND faultLevel   =".$parames['faultLevel'];
+       empty($parames['team_id'])      || $where.=" AND team_id =".$parames['team_id'];
+       if(isset($parames['malfunction_status']) && $parames['malfunction_status']!=''){
+           $where.=" AND malfunction_status in (".$parames['malfunction_status'].")";
+       }
+       if(!empty($parames['malfunction_date'])){
+           $str=preg_split('/\s-\s/',$parames['malfunction_date']);
+           $strTime=strtotime($str[0]);
+           $endTime=strtotime($str[1]);
+           $where.=' AND malfunction_time>='.$strTime.' AND malfunction_time<='.$endTime;
+       }
+       if(!empty($parames['servicing_date'])){
+           $str=preg_split('/\s-\s/',$parames['servicing_date']);
+           $strTime=strtotime($str[0]);
+           $endTime=strtotime($str[1]);
+           $where.=' AND servicing_date>='.$strTime.' AND servicing_date<='.$endTime;
+       }
+       if(isset($parames['input_data']) && $parames['input_data']!=''){
+           $data=trim($parames['input_data']);
+           if(preg_match("/^[0-9a-zA-Z]{3,10}$/", $data)){
+               $where.=' AND cabinet_num='."'".$data."'";
+           }else{
+               $where.=" AND  admin_user_name LIKE"."'%". $data ."%'";
+           }
+       }
+       $sql=" SELECT * FROM ".$this->tablename." WHERE status=0".$where." ORDER BY id DESC ".$limit;
+       return $this->getCacheResultArray($sql);
+   }
+
+
+   /*后台修改故障信息
+    * */
+   public function editMalData($data,$wheres)
+   {
+       $data['create_time']=time();
+       $update=$this->update($data, $wheres);
+       if($update){
+           return $update;
+       }else{
+           return false;
+       }
+   }
+
+
+
+
+
+
+
+
+}
